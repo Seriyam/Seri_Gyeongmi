@@ -1,7 +1,8 @@
-from flask import Flask, render_template, url_for, request, jsonify, session, flash
+from flask import Flask, render_template, request, jsonify, flash
 from pymongo import MongoClient
 
-client = MongoClient('localhost', 27017)
+client = MongoClient('mongodb://test:test@13.125.103.163', 27017)
+# client = MongoClient('localhost', 27017)
 db = client.piracheminMartDB  # 'piracheminMartDB' db 생성
 
 app = Flask(__name__)
@@ -11,6 +12,7 @@ app.secret_key = '피라체민_프로젝트_냉장고파먹기_8조'
 
 
 # 로그인 전 index
+
 @app.route('/')
 def home1():
     return render_template('index.html')
@@ -81,29 +83,28 @@ def new_member():
 
 
 # 재료추가
-# food_name = ''
-
-
 @app.route('/newItem', methods=['GET', 'POST'])
 def add_item():
     if request.method == 'POST':
 
         food_name = request.form.get('food_name')
+        target = request.form.get('target')
         print("food_name is", food_name)
-
-        food_find = db.NutientsDB.find_one({'음식명': food_name}, {'_id': False})
+        print("target name is", target)
+        food_find = db.NutrientsDB.find_one({'음식명': food_name}, {'_id': False})
         print("food_find is", food_find)
 
         if food_find is not None:
             flash('완료!')
             db.userItem.insert_one(food_find)
             return render_template('ingredient.html')
-
-        elif food_find is None:
+        elif food_find is None and target is None:
             flash('찾는 재료가 없어요! ㅠ_ㅠ')
             return render_template('ingredient.html')
-
-    if request.method == 'GET':
+        elif target is not None:
+            food_find = db.userItem.delete_one({'음식명': target})
+            return render_template('ingredient.html')
+    elif request.method == 'GET':
         food_find_list = list(db.userItem.find({}, {'_id': False}))
         print("food_find_list is", food_find_list)
         return jsonify({'all_food': food_find_list})
